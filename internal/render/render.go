@@ -3,8 +3,9 @@ package render
 import (
 	"bytes"
 	"fmt"
-	"github.com/yinho999/go-bookings/pkg/config"
-	"github.com/yinho999/go-bookings/pkg/models"
+	"github.com/justinas/nosurf"
+	"github.com/yinho999/go-bookings/internal/config"
+	"github.com/yinho999/go-bookings/internal/models"
 	"html/template"
 	"log"
 	"net/http"
@@ -18,12 +19,13 @@ func NewTemplates(a *config.AppConfig) {
 	app = a
 }
 
-func AddDefaultData(td *models.TemplateData) *models.TemplateData {
+func AddDefaultData(td *models.TemplateData, request *http.Request) *models.TemplateData {
+	td.CSRFToken = nosurf.Token(request)
 	return td
 }
 
 // RenderTemplate renders templates using html/template
-func RenderTemplate(w http.ResponseWriter, tmpl string, td *models.TemplateData) {
+func RenderTemplate(w http.ResponseWriter, tmpl string, td *models.TemplateData, request *http.Request) {
 	var tc map[string]*template.Template
 	// If we are in dev mode not prod mode, dont use template cache,
 	// instead create template cache on each request
@@ -44,7 +46,7 @@ func RenderTemplate(w http.ResponseWriter, tmpl string, td *models.TemplateData)
 	buf := new(bytes.Buffer)
 
 	// Add the default data
-	td = AddDefaultData(td)
+	td = AddDefaultData(td, request)
 
 	// test the template in buffer
 	err := t.Execute(buf, td)
