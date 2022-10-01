@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/yinho999/go-bookings/internal/config"
+	"github.com/yinho999/go-bookings/internal/forms"
 	"github.com/yinho999/go-bookings/internal/models"
 	"github.com/yinho999/go-bookings/internal/render"
 	"log"
@@ -59,7 +60,49 @@ func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
 
 // Reservation renders the make a reservation page and display form
 func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, "make-reservation.page.tmpl", &models.TemplateData{}, r)
+	// Create reservation and send to template
+	var emptyReservation models.Reservation
+	data := make(map[string]interface{})
+	data["reservation"] = emptyReservation
+
+	render.RenderTemplate(w, "make-reservation.page.tmpl", &models.TemplateData{
+		Form: forms.New(nil),
+		Data: data,
+	}, r)
+}
+
+// PostReservation handles the submission of reservation form
+func (m *Repository) PostReservation(writer http.ResponseWriter, request *http.Request) {
+	err := request.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	reservation := models.Reservation{
+		FirstName: request.Form.Get("first_name"),
+		LastName:  request.Form.Get("last_name"),
+		Email:     request.Form.Get("email"),
+		Phone:     request.Form.Get("phone"),
+	}
+	// form validation
+	form := forms.New(request.PostForm)
+	form.Required("first_name", "last_name", "email")
+	form.MinLength("first_name", 3)
+	form.IsEmail("email")
+
+	// If errors, redisplay the reservation page
+	if !form.Valid() {
+		data := make(map[string]interface{})
+		data["reservation"] = reservation
+		render.RenderTemplate(writer, "make-reservation.page.tmpl", &models.TemplateData{
+			Form: form,
+			Data: data,
+		}, request)
+		return
+	}
+	// pass the reservation data to session
+	m.App.Session.Put(request.Context(), "reservation", reservation)
+	http.Redirect(writer, request, "/reservation-summary", http.StatusSeeOther)
 }
 
 // Generals renders the room page
@@ -109,4 +152,24 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(out)
+}
+
+func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) {
+	// get the reservation data from the session
+	// .models.Reservation is the type of the data
+	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+	if !ok {
+		log.Println("Cannot get item from session")
+		// redirect to make reservation page
+		m.App.Session.Put(r.Context(), "error", "Can't get reservation from session")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+	// remove the reservation data from the session after we get it
+	m.App.Session.Remove(r.Context(), "reservation")
+	data := make(map[string]interface{})
+	data["reservation"] = reservation
+	render.RenderTemplate(w, "reservation-summary.page.tmpl", &models.TemplateData{
+		Data: data,
+	}, r)
 }
