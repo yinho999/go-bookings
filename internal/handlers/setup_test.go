@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -44,6 +45,13 @@ func getRoutes() http.Handler {
 	// what am i going to put in the session
 	// register the type of data we want to put in the session
 	gob.Register(models.Reservation{})
+	// create a log print out in console window, with INFO prefix, and log.Ldate | log.Ltime
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	app.InfoLog = infoLog
+
+	// create a log print out in console window, with ERROR prefix, and log.Ldate | log.Ltime | log.Lshortfile
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	app.ErrorLog = errorLog
 
 	// change this to true when in production
 	app.InProduction = false

@@ -5,6 +5,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/yinho999/go-bookings/internal/config"
 	"github.com/yinho999/go-bookings/internal/models"
+	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -19,6 +20,13 @@ func TestMain(m *testing.M) {
 	// what am i going to put in the session
 	// register the type of data we want to put in the session
 	gob.Register(models.Reservation{})
+	// create a log print out in console window, with INFO prefix, and log.Ldate | log.Ltime
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	testApp.InfoLog = infoLog
+
+	// create a log print out in console window, with ERROR prefix, and log.Ldate | log.Ltime | log.Lshortfile
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	testApp.ErrorLog = errorLog
 
 	// change this to true when in production
 	testApp.InProduction = false

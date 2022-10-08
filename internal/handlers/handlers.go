@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/yinho999/go-bookings/internal/config"
 	"github.com/yinho999/go-bookings/internal/forms"
+	"github.com/yinho999/go-bookings/internal/helpers"
 	"github.com/yinho999/go-bookings/internal/models"
 	"github.com/yinho999/go-bookings/internal/render"
-	"log"
 	"net/http"
 )
 
@@ -35,26 +35,26 @@ func NewHandlers(r *Repository) {
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
 
 	// Store remote Ip address
-	remoteIP := r.RemoteAddr
+	//remoteIP := r.RemoteAddr
 	// Store into the session
-	m.App.Session.Put(r.Context(), "remote_ip", remoteIP)
+	//m.App.Session.Put(r.Context(), "remote_ip", remoteIP)
 
 	render.RenderTemplate(w, "home.page.tmpl", &models.TemplateData{}, r)
 }
 
 // About is the about page handler
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-	// perform some logic
-	stringMap := make(map[string]string)
-	stringMap["test"] = "Hello, again."
-
-	// retrieve data from the session
-	remoteIP := m.App.Session.GetString(r.Context(), "remote_ip")
-	stringMap["remote_ip"] = remoteIP
+	//// perform some logic
+	//stringMap := make(map[string]string)
+	//stringMap["test"] = "Hello, again."
+	//
+	//// retrieve data from the session
+	//remoteIP := m.App.Session.GetString(r.Context(), "remote_ip")
+	//stringMap["remote_ip"] = remoteIP
 
 	// send the data to the template
 	render.RenderTemplate(w, "about.page.tmpl", &models.TemplateData{
-		StringMap: stringMap,
+		//StringMap: stringMap,
 	}, r)
 }
 
@@ -75,7 +75,8 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 func (m *Repository) PostReservation(writer http.ResponseWriter, request *http.Request) {
 	err := request.ParseForm()
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
+		helpers.ServerError(writer, err)
 		return
 	}
 	reservation := models.Reservation{
@@ -147,7 +148,8 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	out, err := json.MarshalIndent(resp, "", "     ")
 	if err != nil {
-		log.Println(err)
+		helpers.ServerError(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -159,7 +161,7 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	// .models.Reservation is the type of the data
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
-		log.Println("Cannot get item from session")
+		m.App.ErrorLog.Println("Cannot get item from session")
 		// redirect to make reservation page
 		m.App.Session.Put(r.Context(), "error", "Can't get reservation from session")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
